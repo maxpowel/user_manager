@@ -17,6 +17,8 @@ class Permission(Document):
     role = StringField(required=True)
     resource = StringField(required=True)
     permission = StringField(required=True)
+    resource_id = StringField(null=True)
+    namespace = StringField(null=True)
 
 
 class MongoUserManager(UserManager):
@@ -44,7 +46,7 @@ class MongoUserManager(UserManager):
         self.notify(UserCreatedEvent(user=u))
         return u
 
-    def updatePassword(self, user, password):
+    def update_password(self, user, password):
         user.salt = self.generate_salt()
         user.password = self.encode_password(password, user.salt)
         user.save()
@@ -69,24 +71,79 @@ class MongoUserManager(UserManager):
         user.save()
         self.notify(UserUpdatedEvent(user=user))
 
-    def grant(self, role, resource, permission):
-        p = self.permission_model(role=role, resource=resource, permission=permission)
+    def grant(self, role, resource, permission, resource_id=None, namespace=None):
+        p = self.permission_model(
+            role=role,
+            resource=resource,
+            permission=permission,
+            resource_id=resource_id,
+            namespace=namespace
+        )
         p.save()
         self.notify(GrantEvent(role=role, resource=resource, permission=permission))
 
-    def revoke(self, role, resource, permission):
-        for p in self.permission_model.objects(role=role, resource=resource, permission=permission):
+    def revoke(self, role, resource, permission, resource_id=None, namespace=None):
+        for p in self.permission_model.objects(
+                role=role,
+                resource=resource,
+                permission=permission,
+                resource_id=resource_id,
+                namespace=namespace
+        ):
             p.remove()
             self.notify(RevokeEvent(role=role, resource=resource, permission=permission))
 
-    def is_granted(self, role, resource, permission):
-        return self.permission_model.objects(role=role, resource=resource, permission=permission).count() > 0
+    def is_granted(self, role, resource, permission, resource_id=None, namespace=None):
+        query_filter = {
+            "resource": resource,
+            "permission": permission,
+            "resource_id": resource_id,
+            "namespace": namespace
+        }
 
-    def role_permissions(self, role):
-        return [{"resource": p.resource, "permission": p.permission} for p in self.permission_model.objects(role=role)]
+        if isinstance(role, list):
+            query_filter["role__in"] = role
+        else:
+            query_filter["role"] = role
 
-    def resource_permissions(self, resource):
-        return [{"resource": p.resource, "permission": p.permission} for p in self.permission_model.objects(resource=resource)]
+        return self.permission_model.objects(**query_filter).count() > 0
+
+    def get_granted(self, role=None, resource=None, permission=None, resource_id=None, namespace=None, size=100, offset=0):
+        query_filter = {}
+
+        if isinstance(role, list):
+            query_filter["role__in"] = role
+        elif role is not None:
+            query_filter["role"] = role
+
+        if isinstance(resource, list):
+            query_filter["resource__in"] = resource
+        elif resource is not None:
+            query_filter["resource"] = resource
+
+        if isinstance(permission, list):
+            query_filter[permission] = permission
+        elif permission is not None:
+            query_filter["permission"] = permission
+
+        if isinstance(resource_id, list):
+            query_filter["resource_id__in"] = resource_id
+        elif resource_id is not None:
+            query_filter["resource_id"] = resource_id
+
+        if isinstance(namespace, list):
+            query_filter["namespace__in"] = namespace
+        elif namespace is not None:
+            query_filter["namespace"] = namespace
+
+        print(query_filter)
+        return self.permission_model.objects(**query_filter)
+
+    def role_permissions(self, role, namespace=None):
+        return [{"resource": p.resource, "permission": p.permission} for p in self.permission_model.objects(role=role, namespace=namespace)]
+
+    def resource_permissions(self, resource, resource_id=None, namespace=None):
+        return [{"resource": p.resource, "permission": p.permission} for p in self.permission_model.objects(resource=resource, resource_id=resource_id, namespace=namespace)]
 
     def notify(self, event):
         logging.debug(event)

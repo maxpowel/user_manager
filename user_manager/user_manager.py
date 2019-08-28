@@ -4,13 +4,6 @@ import random
 import string
 
 
-class Permission(object):
-    VIEW = "view"
-    CREATE = "create"
-    EDIT = "edit"
-    REMOVE = "remove"
-
-
 class UserCreatedEvent(object):
     def __init__(self, user):
         self.user = user
@@ -25,10 +18,12 @@ class UserRemovedEvent(UserCreatedEvent):
 
 
 class GrantEvent(object):
-    def __init__(self, role, resource, permission):
+    def __init__(self, role, resource, permission, resource_id=None, namespace=None):
         self.role = role
         self.resource = resource
         self.permission = permission
+        self.resource_id = resource_id
+        self.namespace = namespace
 
 
 class RevokeEvent(GrantEvent):
@@ -51,7 +46,7 @@ class UserManager(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def updatePassword(self, user, password):
+    def update_password(self, user, password):
         pass
 
     @abstractmethod
@@ -75,23 +70,27 @@ class UserManager(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def grant(self, role, resource, permission):
+    def grant(self, role, resource, permission, resource_id=None, namespace=None):
         pass
 
     @abstractmethod
-    def revoke(self, role, resource, permission):
+    def revoke(self, role, resource, permission, resource_id=None, namespace=None):
         pass
 
     @abstractmethod
-    def is_granted(self, role, resource, permission):
+    def is_granted(self, role, resource, permission, resource_id=None, namespace=None):
         pass
 
     @abstractmethod
-    def role_permissions(self, role):
+    def get_granted(self, role=None, resource=None, permission=None, resource_id=None, namespace=None, size=100, offset=0):
         pass
 
     @abstractmethod
-    def resource_permissions(self, resource):
+    def role_permissions(self, role, namespace=None):
+        pass
+
+    @abstractmethod
+    def resource_permissions(self, resource, resource_id=None, namespace=None):
         pass
 
     @abstractmethod
