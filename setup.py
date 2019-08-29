@@ -6,7 +6,7 @@ with open('requirements.txt') as fp:
 setup(
   name='user_manager',
   packages=['user_manager'],
-  version='2.0',
+  version='2.1',
   description='Minimal user manager interface',
   author='Alvaro Garcia Gomez',
   author_email='maxpowel@gmail.com',
