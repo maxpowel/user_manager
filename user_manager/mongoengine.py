@@ -3,7 +3,7 @@ from user_manager.user_manager import UserManager, GrantEvent, AuthenticationEve
 import logging
 
 
-class User(Document):
+class SimpleUser(Document):
 
     username = StringField(required=True, unique=True)
     password = StringField(required=True)
@@ -23,7 +23,7 @@ class Permission(Document):
 
 class MongoUserManager(UserManager):
     
-    def __init__(self, user_model=User, permission_model=Permission):
+    def __init__(self, user_model=SimpleUser, permission_model=Permission):
         self.user_model = user_model
         self.permission_model = permission_model
         
