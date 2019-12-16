@@ -63,7 +63,7 @@ class MongoUserManager(UserManager):
         return self.user_model.objects(**kwars).first()
 
     def remove(self, user):
-        user.remove()
+        user.delete()
         self.notify(UserRemovedEvent(user=user))
 
     def enable(self, user, status):
@@ -90,7 +90,7 @@ class MongoUserManager(UserManager):
                 resource_id=resource_id,
                 namespace=namespace
         ):
-            p.remove()
+            p.delete()
             self.notify(RevokeEvent(role=role, resource=resource, permission=permission))
 
     def is_granted(self, role, resource, permission, resource_id=None, namespace=None):
